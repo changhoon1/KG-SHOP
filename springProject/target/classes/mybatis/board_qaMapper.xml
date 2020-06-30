@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.care.mybatis.board_qaMapper">
+	<!-- 게시판 글쓰기 -->
+	<insert id="savedata" >
+		INSERT INTO BOARD_QA(QA_CATEGORY , USER_ID , QA_CONTENT , QA_LOGTIME , QA_PWD , QA_REPLY , QA_SEQ , QA_STATE , QA_SUBJECT) 
+		VALUES(#{qa_category},#{user_id},#{qa_content},sysdate,#{qa_pwd,jdbcType=VARCHAR},0,qa_seq.nextval,#{qa_state},#{qa_subject})
+	</insert>
+	<!-- 게시판 목록 페이징 -->
+	<select id="listPage" resultType="com.care.DTO.Board_qaDTO" parameterType="com.care.DTO.Board_qaCriteria">
+		SELECT  QA_SEQ, 
+            QA_CATEGORY,
+		        QA_SUBJECT, 
+		        USER_ID, 
+		        QA_LOGTIME
+		 FROM ( 
+		        SELECT QA_SEQ,
+		               QA_CATEGORY, 
+		               QA_SUBJECT, 
+		               USER_ID, 
+		               QA_LOGTIME, 
+		               ROW_NUMBER() OVER(ORDER BY QA_SEQ DESC) AS RNUM
+		         FROM BOARD_QA
+		                       ) MP
+		WHERE RNUM BETWEEN #{rowStart} AND #{rowEnd}
+		ORDER BY QA_SEQ DESC
+	</select>
+	<!-- 게시판 총 개수 -->
+	<select id="listCount" resultType="int">
+	<![CDATA[
+		SELECT COUNT(QA_SEQ)
+		  FROM BOARD_QA
+		 WHERE QA_SEQ > 0
+	]]>
+	</select>
+	<!-- 게시판 조회 -->
+	<select id="read" parameterType="int" resultType="com.care.DTO.Board_qaDTO">
+		SELECT	qa_seq
+			  , QA_PWD
+			  , QA_CONTENT
+			  , QA_SUBJECT
+			  , USER_ID
+			  , QA_LOGTIME
+			  , QA_STATE
+		 FROM BOARD_QA
+		 WHERE qa_seq = #{qa_seq}
+	</select>
+	<!-- 수정 -->
+	<update id="update" parameterType="com.care.DTO.Board_qaDTO">
+		UPDATE BOARD_QA
+		   SET QA_CATEGORY=#{qa_category},
+		   	   QA_CONTENT= #{qa_content},
+		   	   QA_PWD=#{qa_pwd},
+		   	   QA_LOGTIME=sysdate
+		 WHERE qa_seq = #{qa_seq}
+	</update>
+	<!-- 삭제 -->
+	<delete id="delete" parameterType="int">
+		DELETE 
+		  FROM BOARD_QA
+		 WHERE qa_seq = #{qa_seq}
+	</delete>
+</mapper>

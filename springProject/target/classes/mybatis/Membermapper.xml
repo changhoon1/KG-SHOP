@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.care.mybatis.Membermapper">
+	
+	<select id="logincheck" resultType="dto">
+		select id, pw from member where id=#{id} and pw=#{pw}
+	</select>
+
+	<insert id="savedata" parameterType="dto">
+		insert into mybatis_test values(#{id},#{pw},#{name},#{email},#{tel},#{addr},#{pw_answer})
+	</insert>
+	
+	<update id="updatedata" parameterType="com.care.DTO.MemberDTO">
+	update member set
+	 pw=#{pw},
+	 name=#{name},
+	 email=#{email},
+	 tel=#{tel},
+	 addr=#{addr},
+	 pw_answer=#{pw_answer}
+	 where id=#{id}
+	</update>
+	
+</mapper>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,557 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.care.mybatis.Mapper">
+<!-- 회원상세정보 불러오기 -->
+<select id="memberlist" resultType="com.care.DTO.MemberDTO" parameterType="com.care.DTO.MemberDTO">
+   select * from member where id=#{id}
+</select>
+<!-- 회원가입 수정 -->
+<update id="updatedata" parameterType="com.care.DTO.MemberDTO">
+	update member set
+	 pw=#{pw},
+	 name=#{name},
+	 email=#{email},
+	 tel=#{tel},
+	 addr=#{addr},
+	 addr1=#{addr1},
+	 addr2=#{addr2},
+	 pw_answer=#{pw_answer}
+	 where id=#{id}
+</update>
+<!-- 아이디 중복체크 -->
+<select id="i
+dChk" resultType="int">
+   select count(*) from member
+   where id=#{id}
+</select>
+<!-- 로그인 -->
+   <select id="logincheck" resultType="com.care.DTO.MemberDTO">
+      select id, pw from member where id=#{id}
+   </select>
+<!-- 회원가입 -->
+	<insert id="input" parameterType="com.care.DTO.MemberDTO">
+		insert into member values(#{id},#{pw},#{name},#{email},#{tel},#{addr},#{addr1},#{addr2},#{pw_answer})
+	</insert>
+<!-- 상품등록  -->
+<insert id="saveproduct" parameterType="com.care.DTO.ProductnameDTO">
+      insert into productname values(
+      product_name_no.nextval,
+      #{product_category_no},
+      #{product_name_title},
+      #{product_name_detail},
+      #{product_name_price},
+      #{product_name_image},
+      #{product_thumbnail},
+      #{product_stock},
+      #{product_hit},
+      #{product_hashtag}
+      )
+</insert>
+
+<!-- 상품명 중복체크 -->
+<select id="titleChk" resultType="int">
+   select count(*) from productname
+   where product_name_title=#{product_name_title}
+</select>
+
+<!-- 창훈 상품검색 및 상품목록 페이징처리 -->
+	
+	<!-- 카테고리 상품 총 개수 -->
+	<select id="productListCount" resultType="int">
+	SELECT COUNT(product_category_no)
+		  FROM productname
+		  where product_category_no = #{product_category_no}
+	</select>
+	
+	<!-- 검색상품 총개수 -->
+	<select id="searchListCount" resultType="int">
+	SELECT COUNT(product_category_no)
+		  FROM productname
+		  WHERE 1=1
+		  <include refid="productSearch"></include>
+	</select>
+	<!-- 상품 Best30 -->
+	<select id="bestView" resultType="com.care.DTO.ProductnameDTO">
+		SELECT  PRODUCT_NAME_NO, 
+            PRODUCT_CATEGORY_NO,
+		    PRODUCT_NAME_TITLE,
+	        PRODUCT_NAME_DETAIL, 
+	        PRODUCT_NAME_PRICE,
+            PRODUCT_NAME_IMAGE,
+            PRODUCT_THUMBNAIL,
+            PRODUCT_STOCK,
+            PRODUCT_HIT,
+            PRODUCT_HASHTAG
+		 FROM ( 
+		        SELECT 
+                    PRODUCT_NAME_NO, 
+                    PRODUCT_CATEGORY_NO,
+                    PRODUCT_NAME_TITLE, 
+                    PRODUCT_NAME_DETAIL, 
+                    PRODUCT_NAME_PRICE,
+                    PRODUCT_NAME_IMAGE,
+                    PRODUCT_THUMBNAIL,
+                    PRODUCT_STOCK,
+                    PRODUCT_HIT,
+                    PRODUCT_HASHTAG,
+	                ROW_NUMBER() OVER(ORDER BY PRODUCT_HIT DESC) AS RNUM
+		         	FROM PRODUCTNAME
+		                       ) MP
+		WHERE RNUM BETWEEN 1 AND 30
+	</select>
+	
+	<!-- 카테고리 목록 페이징 -->
+	<select id="productListPage" resultType="com.care.DTO.ProductnameDTO">
+		SELECT  PRODUCT_NAME_NO, 
+            PRODUCT_CATEGORY_NO,
+		    PRODUCT_NAME_TITLE,
+	        PRODUCT_NAME_DETAIL, 
+	        PRODUCT_NAME_PRICE,
+            PRODUCT_NAME_IMAGE,
+            PRODUCT_THUMBNAIL,
+            PRODUCT_STOCK,
+            PRODUCT_HIT,
+            PRODUCT_HASHTAG
+		 FROM ( 
+		        SELECT 
+                    PRODUCT_NAME_NO, 
+                    PRODUCT_CATEGORY_NO,
+                    PRODUCT_NAME_TITLE, 
+                    PRODUCT_NAME_DETAIL, 
+                    PRODUCT_NAME_PRICE,
+                    PRODUCT_NAME_IMAGE,
+                    PRODUCT_THUMBNAIL,
+                    PRODUCT_STOCK,
+                    PRODUCT_HIT,
+                    PRODUCT_HASHTAG,
+	                ROW_NUMBER() OVER(ORDER BY PRODUCT_NAME_NO DESC) AS RNUM
+		         	FROM PRODUCTNAME where product_category_no = #{product_category_no}
+		                       ) MP
+		WHERE RNUM BETWEEN #{rowStart} AND #{rowEnd}
+		ORDER BY PRODUCT_NAME_NO DESC
+	</select>
+	
+	
+	<!-- 상품 검색 목록 페이징 -->
+	<select id="searchView" resultType="com.care.DTO.ProductnameDTO">
+		SELECT  PRODUCT_NAME_NO, 
+            PRODUCT_CATEGORY_NO,
+		    PRODUCT_NAME_TITLE,
+	        PRODUCT_NAME_DETAIL, 
+	        PRODUCT_NAME_PRICE,
+            PRODUCT_NAME_IMAGE,
+            PRODUCT_THUMBNAIL,
+            PRODUCT_STOCK,
+            PRODUCT_HIT,
+            PRODUCT_HASHTAG
+		 FROM ( 
+		        SELECT 
+                    PRODUCT_NAME_NO, 
+                    PRODUCT_CATEGORY_NO,
+                    PRODUCT_NAME_TITLE, 
+                    PRODUCT_NAME_DETAIL, 
+                    PRODUCT_NAME_PRICE,
+                    PRODUCT_NAME_IMAGE,
+                    PRODUCT_THUMBNAIL,
+                    PRODUCT_STOCK,
+                    PRODUCT_HIT,
+                    PRODUCT_HASHTAG,
+	                ROW_NUMBER() OVER(ORDER BY PRODUCT_NAME_NO DESC) AS RNUM
+		         	FROM PRODUCTNAME
+		         	WHERE 1=1
+		         	<include refid="productSearch"></include>
+		                       ) MP
+		WHERE RNUM BETWEEN #{rowStart} AND #{rowEnd}
+		ORDER BY PRODUCT_NAME_NO DESC
+	</select>
+	
+	
+	<!-- 상품 검색 기능-->
+	<sql id="productSearch">
+		<if test="searchType != null">
+			<if test="searchType == 't'.toString()">AND PRODUCT_NAME_TITLE LIKE '%' || #{keyword} || '%'</if>
+			<if test="searchType == 'c'.toString()">AND PRODUCT_HASHTAG LIKE '%' || #{keyword} || '%'</if>
+			<if test="searchType == 'w'.toString()">AND PRODUCT_HASHTAG LIKE '%' || #{keyword} || '%'</if>
+			<if test="searchType == 'tc'.toString()">AND (PRODUCT_NAME_TITLE LIKE '%' || #{keyword} || '%') or (PRODUCT_HASHTAG LIKE '%' || #{keyword} || '%')</if>
+		</if>
+	</sql>
+  
+   
+   <!-- 상품 상세보기 -->
+   <select id="Productlist" resultType="com.care.DTO.ProductnameDTO" parameterType="String">
+      select * from productname where product_name_no=#{product_name_no}
+   </select>
+   <!-- 상품 조회수 올리기 -->
+   
+   <update id="uphit" >
+      update productname
+         set 
+      product_hit = product_hit + 1
+      where product_name_no = #{product_name_no}
+   </update>
+   
+   <!-- 수정할 상품 고유번호보기 -->
+   <select id="Modifylist" resultType="com.care.DTO.ProductnameDTO" parameterType="String" >
+      select product_name_no from productname where product_name_no=#{product_name_no}
+   </select>
+   
+      <!-- 상품수정  -->
+   <update id="modifysaveproduct" parameterType="com.care.DTO.ProductnameDTO">
+      update  productname 
+         set
+      product_category_no =#{product_category_no},
+      product_name_title =#{product_name_title},
+      product_name_detail =#{product_name_detail},
+      product_name_price =#{product_name_price},
+      product_name_image =#{product_name_image},
+      product_thumbnail =#{product_thumbnail},
+      product_stock =#{product_stock},
+      product_hashtag =#{product_hashtag}
+      where product_name_no = #{product_name_no}
+</update>
+
+<!-- 상품삭제 -->
+<delete id="deleteproduct" parameterType="String">
+      delete from productname where product_name_no = #{product_name_no}
+   </delete>
+   
+   <!-- 장바구니등록  -->   
+<insert id="saveshoppingcart" parameterType="com.care.DTO.ShoppingCartDTO">
+      
+      insert into shoppingcart values(
+         #{id},
+         #{product_name_image},
+         #{product_name_title},
+         #{product_name_price},
+         #{product_count}
+      )
+      </insert>
+      
+<!-- 장바구니 중복체크 -->
+<select id="cartChk" resultType="int">
+   select count(*) from shoppingcart
+   where product_name_title=#{product_name_title}
+</select>      
+      
+<!-- 장바구니 상세보기 -->
+   <select id="viewshoppingcart" resultType="com.care.DTO.ShoppingCartDTO" parameterType="String">
+      select * from shoppingcart where id=#{id}
+   </select>
+
+<!-- 창훈 게시판 -->
+	
+	<!-- 게시판 글쓰기 -->
+	<insert id="savedata" >
+		INSERT INTO BOARD_QA(QA_CATEGORY , USER_ID , QA_CONTENT , QA_LOGTIME , QA_PWD , QA_REPLY , QA_SEQ , QA_STATE , QA_SUBJECT) 
+		VALUES(#{qa_category},#{user_id},#{qa_content},sysdate,#{qa_pwd,jdbcType=VARCHAR},0,qa_seq.nextval,#{qa_state},#{qa_subject})
+	</insert>
+	<!-- 게시판 목록 페이징 -->
+   <select id="listPage" resultType="com.care.DTO.Board_qaDTO" parameterType="com.care.DTO.Board_qaCriteria">
+      SELECT  QA_SEQ, 
+            QA_CATEGORY,
+              QA_SUBJECT, 
+              USER_ID, 
+              QA_LOGTIME,
+              QA_STATE
+       FROM ( 
+              SELECT QA_SEQ,
+                     QA_CATEGORY, 
+                     QA_SUBJECT, 
+                     USER_ID, 
+                     QA_LOGTIME, 
+                     QA_STATE,
+                     ROW_NUMBER() OVER(ORDER BY QA_SEQ DESC) AS RNUM
+               FROM BOARD_QA
+               WHERE 1=1
+                  <include refid="search"></include>
+                             ) MP
+      WHERE RNUM BETWEEN #{rowStart} AND #{rowEnd}
+      ORDER BY QA_SEQ DESC
+   </select>
+	<!-- 게시판 총 개수 -->
+	<select id="listCount" resultType="int">
+		SELECT COUNT(QA_SEQ)
+		  FROM BOARD_QA
+		  WHERE 1=1
+		  <include refid="search"></include>
+		 AND QA_SEQ > 0
+	</select>
+	
+	<!-- 게시판 검색 -->
+	<sql id="search">
+		<if test="searchType != null">
+			<if test="searchType == 't'.toString()">AND QA_SUBJECT LIKE '%' || #{keyword} || '%'</if>
+			<if test="searchType == 'c'.toString()">AND QA_CONTENT LIKE '%' || #{keyword} || '%'</if>
+			<if test="searchType == 'w'.toString()">AND USER_ID LIKE '%' || #{keyword} || '%'</if>
+			<if test="searchType == 'tc'.toString()">AND (QA_SUBJECT LIKE '%' || #{keyword} || '%') or (QA_CONTENT LIKE '%' || #{keyword} || '%')</if>
+		</if>
+	</sql>
+	
+	<!-- 게시판 조회 -->
+	<select id="read" parameterType="int" resultType="com.care.DTO.Board_qaDTO">
+		SELECT	QA_SEQ
+			  , QA_CATEGORY
+			  , QA_PWD
+			  , QA_CONTENT
+			  , QA_SUBJECT
+			  , USER_ID
+			  , QA_LOGTIME
+			  , QA_STATE
+		 FROM BOARD_QA
+		 WHERE qa_seq = #{qa_seq} 
+	</select>
+	
+	<!-- 수정 -->
+	<update id="update" parameterType="com.care.DTO.Board_qaDTO">
+		UPDATE BOARD_QA
+		   SET QA_CATEGORY=#{qa_category},
+		   	   QA_SUBJECT= #{qa_subject},
+		   	   QA_CONTENT= #{qa_content},
+		   	   QA_PWD=#{qa_pwd},
+		   	   QA_LOGTIME=sysdate
+		 WHERE qa_seq = #{qa_seq}
+	</update>
+	<!-- 삭제 -->
+	<delete id="delete" parameterType="int">
+		DELETE 
+		  FROM BOARD_QA
+		 WHERE qa_seq = #{qa_seq}
+	</delete>
+	
+	<!-- 댓글 조회 -->
+	<select id="readReply" parameterType="int" resultType="com.care.DTO.board_qaReplyDTO">
+    	SELECT
+    		  qa_reply_seq, qa_reply_content, qa_reply_user_id, qa_reply_logtime
+    	 FROM qa_reply
+    	WHERE qa_seq = #{qa_seq}
+	</select>
+	<!-- 댓글작성 -->
+	<insert id="writeReply">
+		INSERT INTO QA_REPLY(
+			qa_seq
+			, qa_reply_seq
+			, qa_reply_content
+			, qa_reply_user_id
+			,qa_reply_logtime
+		)
+		VALUES(    #{qa_seq}
+			, qa_reply_seq.NEXTVAL
+			, #{qa_reply_content}
+			, #{qa_reply_user_id}	
+			,sysdate)
+	</insert>
+	
+	<!-- 댓글 수정 -->
+	<update id="updateReply" parameterType="com.care.DTO.board_qaReplyDTO">
+		UPDATE QA_REPLY SET qa_reply_content = #{qa_reply_content}
+		WHERE qa_reply_seq = #{qa_reply_seq}
+	</update>
+
+	<!-- 댓글 삭제 -->
+	<delete id="deleteReply" parameterType="com.care.DTO.board_qaReplyDTO">
+		DELETE FROM qa_reply
+		WHERE qa_reply_seq = #{qa_reply_seq}
+	</delete>
+	
+	<!-- 선택된 댓글 조회 -->
+	<select id="selectReply" resultType="com.care.DTO.board_qaReplyDTO">
+		SELECT
+				qa_seq
+			  , qa_reply_seq
+			  , qa_reply_content
+			  , qa_reply_user_id
+			  , qa_reply_logtime
+		  FROM QA_REPLY
+		 WHERE qa_reply_seq = #{qa_reply_seq}
+	</select>
+	
+	
+	
+	<!-- 주문할 상품 불러오기 -->
+	 <select id="orderview" resultType="com.care.DTO.ProductnameDTO" parameterType="String">
+      select * from productname where product_name_title=#{product_name_title}
+   </select>
+	
+	
+	<!--  주문 테이블 저장 -->
+	<insert id="saveorders">
+	insert into pay values(
+		#{id},
+		#{email},
+		#{tel},
+		#{addr},
+		#{product_name_title},
+		#{product_name_price},
+		#{product_count},
+		#{product_sumprice}
+	)
+	</insert>
+	
+	<select id="pay" resultType="com.care.DTO.OrdersDTO" parameterType="String">
+	select * from pay where id=#{id}
+	
+	</select>
+	
+	<delete id="deletecart" parameterType="com.care.DTO.DeletecartDTO">
+	
+	delete from shoppingcart 
+	where id=#{id} and 
+	product_name_title=#{product_name_title}
+	</delete>
+	
+	
+	<insert id="saveorderlist">
+		insert into paylist select * from pay where product_name_title=#{product_name_title} 
+	</insert>
+	
+	<delete id="deletepay">
+		delete from pay where product_name_title = #{product_name_title}
+	</delete>
+	
+	<update id="downstock" parameterType="com.care.DTO.DownStockDTO">
+		update productname
+         set 
+      product_stock = product_stock - #{product_count}
+      where product_name_title = #{product_name_title}
+	</update>
+	
+	<select id="vieworderlist" resultType="com.care.DTO.OrderlistDTO" parameterType="String">
+		select * from paylist where id = #{id}
+	</select>
+	
+	<!-- 배너 저장 -->
+	<update id="savebanner" parameterType="com.care.DTO.BannerDTO">
+		update  banner
+         set
+      banner_category =#{banner_category},
+      banner_image =#{banner_image}
+      where banner_no = #{change_no}
+
+	</update>
+	
+	<!--배너 불러오기 -->
+	<select id="viewbanner" resultType="com.care.DTO.BannerDTO" parameterType="String">
+		select * from banner 
+	</select>
+	
+	<!-- 리뷰 목록 페이징 -->
+	<select id="reviewList" resultType="com.care.DTO.ReviewDTO" parameterType="com.care.DTO.Board_qaCriteria">
+		SELECT  review_seq, 
+           		review_score,
+		        review_product_title,
+            	review_product_image,
+		        review_user_id, 
+		        review_subject,
+            	review_content,
+           		review_image,
+           		review_logtime            
+		 FROM ( 
+		        SELECT 
+              review_seq, 
+           	  review_score,
+              review_product_title, 
+              review_product_image,
+              review_user_id, 
+              review_subject,
+              review_content,
+              review_image,
+              review_logtime, 
+		      ROW_NUMBER() OVER(ORDER BY review_seq DESC) AS RNUM
+	          FROM BOARD_REVIEW
+		                       ) MP
+		WHERE RNUM BETWEEN #{rowStart} AND #{rowEnd}
+		ORDER BY review_seq DESC
+	</select>
+	<!-- 리뷰게시판 총 개수 -->
+	<select id="reviewListCount" resultType="int">
+		SELECT COUNT(REVIEW_SEQ)
+		  FROM BOARD_REVIEW
+	</select>
+	<!-- 리뷰 글쓰기 -->
+	<insert id="reviewSavedata" >
+		INSERT INTO BOARD_REVIEW(
+              review_seq, 
+           	  review_score,
+              review_product_title, 
+              review_product_image,
+              review_user_id, 
+              review_subject,
+              review_content,
+              review_image,
+              review_logtime) 
+		VALUES(
+		      review_seq.nextval,
+		      #{review_score},
+		      #{review_product_title},
+		      #{review_product_image},
+		      #{review_user_id},
+		      #{review_subject},
+		      #{review_content},
+		      #{review_image},
+		      sysdate
+     	 )
+	</insert>
+
+	<!-- 리뷰 상품정보 가져오기 -->	
+	<select id="getproduct" resultType="com.care.DTO.ProductnameDTO" parameterType="String">
+		select 
+			product_name_title,
+			product_thumbnail
+			from productname
+			where 
+			product_name_title = #{product_name_title}
+	
+	</select>
+	
+	<!-- 게시판 조회 -->
+	<select id="reviewReadView" parameterType="int" resultType="com.care.DTO.ReviewDTO">
+		SELECT	
+			  review_seq, 
+           	  review_score,
+              review_product_title, 
+              review_product_image,
+              review_user_id, 
+              review_subject,
+              review_content,
+              review_image,
+              review_logtime
+		 FROM BOARD_REVIEW
+		 WHERE review_seq = #{review_seq} 
+	</select>
+	
+	<!-- 리뷰 게시판 수정 -->
+	<update id="reviewUpdate" parameterType="com.care.DTO.ReviewDTO">
+		UPDATE BOARD_REVIEW
+		   SET 
+           	  review_score=#{review_score},
+              review_product_title=#{review_product_title},
+              review_product_image=#{review_product_image},
+              review_subject=#{review_subject},
+              review_content=#{review_content},
+              review_image=#{review_image},
+              review_logtime=sysdate
+		 WHERE review_seq = #{review_seq}
+	</update>
+	<!-- 리뷰 게시판 삭제 -->
+	<delete id="reviewDelete" parameterType="int">
+		DELETE 
+		  FROM BOARD_REVIEW
+		 WHERE review_seq = #{review_seq}
+	</delete>
+	
+</mapper>
+
+
+
+
+
+
+
+
+
+
+
+
+
